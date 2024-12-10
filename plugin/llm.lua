@@ -28,7 +28,7 @@ config = function()
       api_key = key_file:read '*line'
       key_file:close()
     else
-      error 'Failed to read OpenAI API key from ./or_key'
+      error 'Failed to read OpenRouter API key from ./or_key'
     end
     local data = {
       messages = { { role = 'system', content = system_prompt }, { role = 'user', content = prompt } },
