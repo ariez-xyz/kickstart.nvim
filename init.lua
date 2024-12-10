@@ -120,6 +120,7 @@ end)
 
 -- Enable break indent
 vim.opt.breakindent = true
+vim.opt.breakindentopt = { 'shift:2' } -- indent line breaks by an extra 2 spaces
 
 -- Save undo history
 vim.opt.undofile = true
@@ -157,8 +158,30 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- NOTE: ariez's settings.
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.linebreak = true
+vim.opt.breakindent = true
+-- This must go before vimwiki loads I believe. It doesn't work at the end
+vim.g.vimwiki_list = { { path = '/mnt/d/Seafile/Zettelkasten', syntax = 'markdown', ext = '.md' } }
+vim.g.vimwiki_ext = '.md'
+vim.g.vimwiki_hl_headers = 1 -- highlight header levels in diff colors
+vim.g.vimwiki_hl_cb_checked = 1 -- same for checkboxes I would guess
+vim.g.vimwiki_key_mappings = { table_mappings = 0 }
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
+
+-- NOTE: ariez's keymaps.
+vim.keymap.set('n', ';', ':')
+vim.keymap.set('n', 'j', 'gj')
+vim.keymap.set('n', 'k', 'gk')
+vim.keymap.set('n', '<Tab>', 'gt')
+vim.keymap.set('n', '<S-Tab>', 'gT')
+vim.api.nvim_create_user_command('Zk', function(opts)
+  vim.fn['fzf#vim#files']('/mnt/d/Seafile/Zettelkasten', opts.bang)
+end, { bang = true })
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
@@ -228,6 +251,11 @@ vim.opt.rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
+  -- NOTE: ariez's plugins
+  'vimwiki/vimwiki', -- Detect tabstop and shiftwidth automatically
+  'junegunn/fzf',
+  'junegunn/fzf.vim',
+
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
@@ -510,6 +538,9 @@ require('lazy').setup({
             vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
           end
 
+          -- NOTE: ariez's maps
+          map('K', vim.lsp.buf.hover, 'Hover Documentation')
+
           -- Jump to the definition of the word under your cursor.
           --  This is where a variable was first declared, or where a function is defined, etc.
           --  To jump back, press <C-t>.
@@ -615,9 +646,20 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        -- NOTE: ariez's LSPs
+        pyright = {
+          settings = {
+            python = {
+              analysis = {
+                autoSearchPaths = true,
+                useLibraryCodeForTypes = true,
+                diagnosticMode = 'workspace',
+              },
+            },
+          },
+        },
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -839,13 +881,15 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    -- NOTE: ariez's colorscheme
+    'bluz71/vim-moonfly-colors',
+    -- Other options: 'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     init = function()
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day', 'tokyonight-night'
+      vim.cmd.colorscheme 'moonfly'
 
       -- You can configure highlights by doing something like:
       vim.cmd.hi 'Comment gui=none'
@@ -898,7 +942,7 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -968,3 +1012,11 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- NOTE: ariez's stuff
+vim.g.vimwiki_list = { { path = '/mnt/d/Seafile/Zettelkasten', syntax = 'markdown', ext = '.md' } }
+vim.cmd 'tab all' -- Must be at the end or syntax highlighting breaks?
+vim.keymap.set('n', '<C-9>', '<Plug>VimwikiPrevLink')
+vim.keymap.set('n', '<Leader>wn', '<Plug>VimwikiNextLink')
+vim.keymap.set('n', '<Tab>', 'gt')
+vim.keymap.set('n', '<S-Tab>', 'gT')
