@@ -182,6 +182,13 @@ vim.keymap.set('n', '<S-Tab>', 'gT')
 vim.api.nvim_create_user_command('Zk', function(opts)
   vim.fn['fzf#vim#files']('/mnt/d/Seafile/Zettelkasten', opts.bang)
 end, { bang = true })
+-- Open a terminal pane
+vim.keymap.set('n', '<Leader>tt', function()
+  vim.cmd.vnew()
+  vim.cmd.wincmd 'J'
+  vim.api.nvim_win_set_height(0, 15)
+  vim.cmd.term()
+end)
 
 -- Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
@@ -215,6 +222,16 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
+
+-- NOTE: ariez's autocommands
+vim.api.nvim_create_autocmd('TermOpen', {
+  desc = 'Terminal settings like nonumber, auto insert mode',
+  group = vim.api.nvim_create_augroup('ariez-term', { clear = true }),
+  callback = function()
+    vim.opt.number = false
+    vim.cmd 'startinsert'
+  end,
+})
 
 -- Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode

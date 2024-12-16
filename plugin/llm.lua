@@ -23,7 +23,7 @@ config = function()
   local function make_openrouter_spec_args(opts, prompt, system_prompt)
     local url = opts.url
     local api_key
-    local key_file = io.open('./or_key', 'r')
+    local key_file = io.open(vim.fn.stdpath 'config' .. '/plugin/or_key', 'r')
     if key_file then
       api_key = key_file:read '*line'
       key_file:close()
