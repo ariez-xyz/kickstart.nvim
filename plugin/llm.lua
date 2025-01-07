@@ -79,9 +79,9 @@ config = function()
     }, make_openrouter_spec_args, handle_openrouter_spec_data)
   end
 
-  vim.keymap.set({ 'n', 'v' }, '<leader>r', replace_mini, { desc = '4o mini replace' })
-  vim.keymap.set({ 'n', 'v' }, '<leader>R', replace_405, { desc = '405b replace' })
-  vim.keymap.set({ 'n', 'v' }, '<leader>s', replace_sonnet, { desc = 'sonnet 3.5 replace' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rr', replace_mini, { desc = '4o mini replace' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rR', replace_405, { desc = '405b replace' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rs', replace_sonnet, { desc = 'sonnet 3.5 replace' })
 end
 
 config()
