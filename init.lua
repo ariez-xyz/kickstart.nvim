@@ -163,6 +163,7 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.linebreak = true
 vim.opt.breakindent = true
+vim.opt.scrollback = 20000
 -- This must go before vimwiki loads I believe. It doesn't work at the end
 vim.g.vimwiki_list = { { path = '/mnt/d/Seafile/Zettelkasten', syntax = 'markdown', ext = '.md' } }
 vim.g.vimwiki_ext = '.md'
@@ -694,6 +695,12 @@ require('lazy').setup({
             },
           },
         },
+        -- Disabled this completely. Wouldn't let me disable for Markdown only.
+        ltex = {
+          --broken:
+          --enabled = {"latex"},
+          enabled = false,
+        },
         -- clangd = {},
         -- gopls = {},
         -- rust_analyzer = {},
@@ -867,9 +874,9 @@ require('lazy').setup({
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
-          --['<CR>'] = cmp.mapping.confirm { select = true },
-          --['<Tab>'] = cmp.mapping.select_next_item(),
-          --['<S-Tab>'] = cmp.mapping.select_prev_item(),
+          ['<CR>'] = cmp.mapping.confirm { select = true },
+          ['<Tab>'] = cmp.mapping.select_next_item(),
+          ['<S-Tab>'] = cmp.mapping.select_prev_item(),
 
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
