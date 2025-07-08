@@ -46,12 +46,12 @@ config = function()
     return args
   end
 
-  local function replace_mini()
+  local function replace_4o()
     dingllm.invoke_llm_and_stream_into_editor({
       url = 'https://openrouter.ai/api/v1/chat/completions',
-      model = 'openai/gpt-4o-mini',
+      model = 'openai/gpt-4o',
       api_key_name = 'OPEN_ROUTER_API_KEY',
-      max_tokens = '1000',
+      max_tokens = '2000',
       system_prompt = replace_prompt,
       replace = true,
     }, make_openrouter_spec_args, handle_openrouter_spec_data)
@@ -60,9 +60,9 @@ config = function()
   local function replace_sonnet()
     dingllm.invoke_llm_and_stream_into_editor({
       url = 'https://openrouter.ai/api/v1/chat/completions',
-      model = 'anthropic/claude-3.5-sonnet:beta',
+      model = 'anthropic/claude-sonnet-4',
       api_key_name = 'OPEN_ROUTER_API_KEY',
-      max_tokens = '1000',
+      max_tokens = '2000',
       system_prompt = replace_prompt,
       replace = true,
     }, make_openrouter_spec_args, handle_openrouter_spec_data)
@@ -73,15 +73,15 @@ config = function()
       url = 'https://openrouter.ai/api/v1/chat/completions',
       model = 'meta-llama/llama-3.1-405b-instruct',
       api_key_name = 'OPEN_ROUTER_API_KEY',
-      max_tokens = '1000',
+      max_tokens = '2000',
       system_prompt = replace_prompt,
       replace = true,
     }, make_openrouter_spec_args, handle_openrouter_spec_data)
   end
 
-  vim.keymap.set({ 'n', 'v' }, '<leader>rr', replace_mini, { desc = '4o mini replace' })
-  vim.keymap.set({ 'n', 'v' }, '<leader>rR', replace_405, { desc = '405b replace' })
-  vim.keymap.set({ 'n', 'v' }, '<leader>rs', replace_sonnet, { desc = 'sonnet 3.5 replace' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rr', replace_4o, { desc = 'gpt-4o' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rR', replace_405, { desc = '405b' })
+  vim.keymap.set({ 'n', 'v' }, '<leader>rs', replace_sonnet, { desc = 'sonnet 4' })
 end
 
 config()
