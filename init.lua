@@ -139,6 +139,20 @@ vim.keymap.set('n', '<leader>tt', function()
   vim.cmd.term()
 end)
 
+-- Open current file in Marked 2 (macOS only)
+vim.keymap.set('n', '<leader>md', function()
+  if vim.fn.has 'macunix' == 1 then
+    local current_file = vim.fn.expand '%:p'
+    if current_file ~= '' then
+      vim.fn.system('open -a "Marked 2" "' .. current_file .. '"')
+    else
+      vim.notify('No file to open', vim.log.levels.WARN)
+    end
+  else
+    vim.notify('Marked 2 binding only available on macOS', vim.log.levels.INFO)
+  end
+end)
+
 -- zk genhtml
 vim.keymap.set('n', '<leader>h', function()
   local cmd = string.format('cd %s && ./genhtml.sh', vim.fn.shellescape(ZK_DIR))
@@ -256,6 +270,24 @@ require('lazy').setup({
   'vimwiki/vimwiki', -- Detect tabstop and shiftwidth automatically
   'junegunn/fzf',
   'junegunn/fzf.vim',
+  {
+    'S1M0N38/love2d.nvim',
+    lazy = false, -- Default (event = "VeryLazy") is broken, load order conflict with Mason. lua_ls config is loaded after Mason starts lua_ls so it doesn't apply until :LspRestart
+    version = '2.*',
+    opts = {
+      debug_window_opts = {
+        split = 'below',
+      },
+      setup_makeprg = true,
+      identify_love_projects = true,
+      path_to_love_bin = '/opt/homebrew/bin/love',
+    },
+    keys = {
+      { '<leader>v', ft = 'lua', desc = 'LÖVE' },
+      { '<leader>vv', '<cmd>LoveRun<cr>', ft = 'lua', desc = 'Run LÖVE' },
+      { '<leader>vs', '<cmd>LoveStop<cr>', ft = 'lua', desc = 'Stop LÖVE' },
+    },
+  },
   {
     'stevearc/oil.nvim',
     ---@module 'oil'
