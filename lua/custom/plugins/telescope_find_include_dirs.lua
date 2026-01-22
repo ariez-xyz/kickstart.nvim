@@ -9,11 +9,29 @@ local find_include_dirs = function(opts)
   opts = opts or {}
   opts.cwd = opts.cwd or vim.uv.cwd()
 
-  local finder = finders.new_oneshot_job({ 'fdfind' }, {
+  local exclude_patterns = {
+    'venv',
+    '.venv',
+    'node_modules',
+    '.git',
+    '__pycache__',
+    '.pytest_cache',
+    'build',
+    'dist',
+    '.tox',
+    'vendor',
+  }
+
+  local fdfind_args = { 'fdfind' }
+  for _, pattern in ipairs(exclude_patterns) do
+    table.insert(fdfind_args, '--exclude')
+    table.insert(fdfind_args, pattern)
+  end
+
+  local finder = finders.new_oneshot_job(fdfind_args, {
     entry_maker = make_entry.gen_from_file(opts),
     cwd = opts.cwd,
   })
-
   pickers
     .new(opts, {
       --debounce = 100,
@@ -26,7 +44,7 @@ local find_include_dirs = function(opts)
 end
 
 M.setup = function()
-  vim.keymap.set('n', '<leader>sf', find_include_dirs, { desc = '[S]earch [F]iles' })
+  vim.keymap.set('n', '<leader><leader>', find_include_dirs, { desc = '[ ] Search Files' })
 end
 
 return M
