@@ -132,12 +132,32 @@ vim.api.nvim_create_user_command('Zk', function(opts)
 end, { bang = true })
 
 -- Open a terminal pane
-vim.keymap.set('n', '<leader>tt', function()
+vim.keymap.set('n', '<leader>tp', function()
   vim.cmd.vnew()
   vim.cmd.wincmd 'J'
   vim.api.nvim_win_set_height(0, 15)
   vim.cmd.term()
-end)
+end, { desc = '[T]erminal [P]ane' })
+
+-- Open a new empty tab
+vim.keymap.set('n', '<leader>tt', function()
+  vim.cmd.tabnew()
+end, { desc = '[T]ab' })
+
+-- Open terminal in current tab
+vim.keymap.set('n', '<leader>te', function()
+  vim.cmd.term()
+end, { desc = '[Te]rminal' })
+
+-- Open codex in current tab and create new tab with current buffer
+vim.keymap.set('n', '<leader>tc', function()
+  local current_buf = vim.api.nvim_get_current_buf()
+  vim.cmd.tabnew()
+  vim.api.nvim_set_current_buf(current_buf)
+  vim.cmd.tabprev()
+  vim.cmd.term 'codex'
+  vim.cmd 'file codex'
+end, { desc = '[T]ab [C]odex' })
 
 -- Open current file in Marked 2 (macOS only)
 vim.keymap.set('n', '<leader>md', function()
