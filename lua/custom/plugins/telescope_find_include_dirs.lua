@@ -22,6 +22,14 @@ local find_include_dirs = function(opts)
     'vendor',
   }
 
+  local fd_cmd = vim.fn.executable 'fd' == 1 and 'fd' or 'fdfind'
+  local has_fd = vim.fn.executable(fd_cmd) == 1
+
+  if not has_fd then
+    vim.notify('fdfind is not installed. Please install fd to use this feature.', vim.log.levels.WARN)
+    return
+  end
+
   local fdfind_args = { 'fdfind' }
   for _, pattern in ipairs(exclude_patterns) do
     table.insert(fdfind_args, '--exclude')
