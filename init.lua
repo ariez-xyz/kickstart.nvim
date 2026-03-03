@@ -144,6 +144,11 @@ vim.keymap.set('n', '<leader>tt', function()
   vim.cmd.tabnew()
 end, { desc = '[T]ab' })
 
+-- Switch between window panes
+vim.keymap.set('n', '<leader>p', function()
+  vim.cmd.wincmd 'w'
+end, { desc = 'Switch [P]anes' })
+
 -- Open terminal in current tab
 vim.keymap.set('n', '<leader>te', function()
   vim.cmd.term()
@@ -429,6 +434,11 @@ require('lazy').setup({
     branch = '0.1.x',
     dependencies = {
       'nvim-lua/plenary.nvim',
+
+      -- Media files for <leader>zi keybind
+      'nvim-lua/popup.nvim',
+      'nvim-telescope/telescope-media-files.nvim',
+
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
         'nvim-telescope/telescope-fzf-native.nvim',
 
@@ -483,6 +493,13 @@ require('lazy').setup({
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
+          media_files = {
+            -- filetypes whitelist
+            -- defaults to {"png", "jpg", "mp4", "webm", "pdf"}
+            filetypes = { 'png', 'webp', 'jpg', 'jpeg', 'heic' },
+            -- find command (defaults to `fd`)
+            --find_cmd = 'rg',
+          },
         },
       }
 
@@ -527,14 +544,255 @@ require('lazy').setup({
         builtin.find_files { cwd = vim.fn.stdpath 'config' }
       end, { desc = '[S]earch [N]eovim files' })
 
-      -- NOTE: ariez's telescope maps
-      -- Zettelkasten
+      -- NOTE: ariez's telescope/Zettelkasten maps
+      -- Zettelkasten open in current tab
       vim.keymap.set('n', '<leader>zk', function()
         require('telescope.builtin').find_files { cwd = ZK_DIR }
       end, { desc = '[Z]ettel[k]asten' })
+      -- Zettelkasten full text search
       vim.keymap.set('n', '<leader>zl', function()
         require('telescope.builtin').live_grep { cwd = ZK_DIR }
       end, { desc = '[Z]ettelkasten [L]iteral search' })
+      -- Zettelkasten open in new tab
+      vim.keymap.set('n', '<leader>zt', function()
+        require('telescope.builtin').find_files {
+          cwd = ZK_DIR,
+          attach_mappings = function(prompt_bufnr, map)
+            map('i', '<CR>', function()
+              local selection = require('telescope.actions.state').get_selected_entry()
+              require('telescope.actions').close(prompt_bufnr)
+              vim.cmd('tabnew ' .. selection.path)
+            end)
+            map('n', '<CR>', function()
+              local selection = require('telescope.actions.state').get_selected_entry()
+              require('telescope.actions').close(prompt_bufnr)
+              vim.cmd('tabnew ' .. selection.path)
+            end)
+            return true
+          end,
+        }
+      end, { desc = '[Z]ettelkasten [T]ab' })
+
+      -- Zettelkasten insert image
+      -- Asks for source (desktop/downloads/clipboard), prompts for basename, moves newest
+      -- image to pwd, then inserts markdown link: [](<basename>.<ext>)
+      vim.keymap.set('n', '<leader>zi', function()
+        local pickers = require 'telescope.pickers'
+        local finders = require 'telescope.finders'
+        local conf = require('telescope.config').values
+        local previewers = require 'telescope.previewers'
+        local actions = require 'telescope.actions'
+        local action_state = require 'telescope.actions.state'
+
+        local downloads = vim.fn.expand '~/Downloads'
+        local desktop = vim.fn.expand '~/Desktop'
+        local exts = { 'png', 'jpg', 'jpeg', 'webp', 'gif', 'heic', 'heif', 'tiff', 'tif', 'bmp', 'avif' }
+
+        local function target_dir_for_current_buffer()
+          local bufname = vim.api.nvim_buf_get_name(0)
+          return (bufname ~= '' and vim.fn.fnamemodify(bufname, ':p:h')) or vim.fn.getcwd()
+        end
+
+        local function latest_in(dir)
+          local files = {}
+          for _, ext in ipairs(exts) do
+            local g1 = vim.fn.glob(dir .. '/*.' .. ext, false, true)
+            local g2 = vim.fn.glob(dir .. '/*.' .. ext:upper(), false, true)
+            for _, p in ipairs(g1) do
+              table.insert(files, p)
+            end
+            for _, p in ipairs(g2) do
+              table.insert(files, p)
+            end
+          end
+          local latest, latest_t = nil, -1
+          for _, p in ipairs(files) do
+            local t = vim.fn.getftime(p)
+            if t > latest_t then
+              latest, latest_t = p, t
+            end
+          end
+          return latest
+        end
+
+        local function insert_md_image(rel)
+          local row, col = unpack(vim.api.nvim_win_get_cursor(0)) -- row 1-based, col 0-based
+          local line = vim.api.nvim_get_current_line()
+          local before = line:sub(1, col)
+          local after = line:sub(col + 1)
+          local snippet = '![](' .. rel .. ')'
+          vim.api.nvim_set_current_line(before .. snippet .. after)
+          vim.api.nvim_win_set_cursor(0, { row, col + 3 }) -- inside []
+        end
+
+        local function prompt_basename(default_base, cb)
+          vim.ui.input({ prompt = 'rename ' .. default_base .. ': ' }, function(base)
+            if not base or base == '' then
+              base = default_base
+            end
+            base = base:gsub('[\\/]+', '_')
+            cb(base)
+          end)
+        end
+
+        local function copy_file(src, dst)
+          -- pure libuv copy (no shell)
+          local ok, err = vim.loop.fs_copyfile(src, dst)
+          return ok, err
+        end
+
+        local function import_from_path(src)
+          if not src then
+            vim.notify('no file found 🥲', vim.log.levels.WARN)
+            return
+          end
+
+          local ext = src:match '%.([%w]+)$' or 'img'
+          local default_base = vim.fn.fnamemodify(src, ':t:r') -- filename no ext
+          local target_dir = target_dir_for_current_buffer()
+
+          prompt_basename(default_base, function(base)
+            local dst = target_dir .. '/' .. base .. '.' .. ext
+            if vim.loop.fs_stat(dst) then
+              vim.notify('destination exists: ' .. dst, vim.log.levels.ERROR)
+              return
+            end
+
+            local ok, err = copy_file(src, dst)
+            if not ok then
+              vim.notify('copy failed: ' .. tostring(err), vim.log.levels.ERROR)
+              return
+            end
+
+            insert_md_image(base .. '.' .. ext)
+          end)
+        end
+
+        local function import_from_clipboard()
+          local target_dir = target_dir_for_current_buffer()
+          local default_base = 'paste_' .. os.date '%Y%m%d_%H%M%S'
+
+          prompt_basename(default_base, function(base)
+            local dst = target_dir .. '/' .. base .. '.png'
+            if vim.loop.fs_stat(dst) then
+              vim.notify('destination exists: ' .. dst, vim.log.levels.ERROR)
+              return
+            end
+
+            local out = vim.fn.system { 'pngpaste', dst }
+            if vim.v.shell_error ~= 0 then
+              vim.notify('pngpaste failed (clipboard not an image?): ' .. tostring(out), vim.log.levels.ERROR)
+              return
+            end
+
+            insert_md_image(base .. '.png')
+          end)
+        end
+
+        -- compute latest files once
+        local latest_downloads = latest_in(downloads)
+        local latest_desktop = latest_in(desktop)
+
+        -- temp snapshot for previewing clipboard in the picker
+        local clip_tmp = vim.fn.tempname() .. '.png'
+        do
+          local _ = vim.fn.system { 'pngpaste', clip_tmp }
+          if vim.v.shell_error ~= 0 then
+            clip_tmp = nil
+          end
+        end
+
+        local function label(prefix, path)
+          if not path then
+            return prefix .. ': (none)'
+          end
+          return prefix .. ': ' .. vim.fn.fnamemodify(path, ':t')
+        end
+
+        local items = {
+          { kind = 'desktop', label = label('Desktop', latest_desktop), path = latest_desktop },
+          { kind = 'downloads', label = label('Downloads', latest_downloads), path = latest_downloads },
+          { kind = 'clipboard', label = 'Clipboard', path = clip_tmp },
+        }
+
+        -- chafa previewer (works for images + your chafa setup)
+        local chafa_previewer = previewers.new_termopen_previewer {
+          get_command = function(entry)
+            local p = entry and entry.value and entry.value.path
+            if not p or p == '' then
+              return { 'sh', '-lc', 'printf "%s\n" "no preview"' }
+            end
+            return { 'chafa', p }
+          end,
+        }
+
+        pickers
+          .new({}, {
+            prompt_title = 'Insert image',
+            finder = finders.new_table {
+              results = items,
+              entry_maker = function(item)
+                return {
+                  value = item,
+                  display = item.label,
+                  ordinal = item.label,
+                }
+              end,
+            },
+            sorter = conf.generic_sorter {},
+            previewer = chafa_previewer,
+
+            -- vertical stack since we only have 3 options
+            layout_strategy = 'vertical',
+            layout_config = {
+              width = 0.55,
+              height = 0.45,
+              preview_height = 0.65, -- most of the space goes to preview
+              mirror = true, -- preview below results
+            },
+            preview_cutoff = 0,
+
+            attach_mappings = function(prompt_bufnr, map)
+              local function cleanup()
+                if clip_tmp and vim.loop.fs_stat(clip_tmp) then
+                  pcall(vim.loop.fs_unlink, clip_tmp)
+                end
+              end
+
+              local function choose()
+                local entry = action_state.get_selected_entry()
+                actions.close(prompt_bufnr)
+                cleanup()
+
+                if not entry or not entry.value then
+                  return
+                end
+                local v = entry.value
+                if v.kind == 'clipboard' then
+                  import_from_clipboard()
+                elseif v.kind == 'desktop' or v.kind == 'downloads' then
+                  import_from_path(v.path)
+                end
+              end
+
+              map('i', '<CR>', choose)
+              map('n', '<CR>', choose)
+
+              -- also clean up temp on manual close
+              map('i', '<Esc>', function()
+                actions.close(prompt_bufnr)
+                cleanup()
+              end)
+              map('n', '<Esc>', function()
+                actions.close(prompt_bufnr)
+                cleanup()
+              end)
+
+              return true
+            end,
+          })
+          :find()
+      end, { desc = '[Z]ettelkasten [I]mage: Desktop/Downloads/Clipboard' })
       -- TODO: Define as HTML binds to call genhtml.sh and open current file as HTML in browser
 
       -- This bind is defined in a separate file ./lua/custom/plugins/telescope_live_multigrep.lua
