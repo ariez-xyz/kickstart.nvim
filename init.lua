@@ -169,7 +169,8 @@ vim.keymap.set('n', '<leader>md', function()
   if vim.fn.has 'macunix' == 1 then
     local current_file = vim.fn.expand '%:p'
     if current_file ~= '' then
-      vim.fn.system('open -a "Marked 2" "' .. current_file .. '"')
+      local file_dir = vim.fn.fnamemodify(current_file, ':h')
+      vim.fn.system('cd "' .. file_dir .. '" && open -a "Marked 2" "' .. current_file .. '"')
     else
       vim.notify('No file to open', vim.log.levels.WARN)
     end
@@ -620,7 +621,7 @@ require('lazy').setup({
           local line = vim.api.nvim_get_current_line()
           local before = line:sub(1, col)
           local after = line:sub(col + 1)
-          local snippet = '![](' .. rel .. ')'
+          local snippet = '![](' .. rel .. '){width=500px}'
           vim.api.nvim_set_current_line(before .. snippet .. after)
           vim.api.nvim_win_set_cursor(0, { row, col + 3 }) -- inside []
         end
@@ -631,6 +632,7 @@ require('lazy').setup({
               base = default_base
             end
             base = base:gsub('[\\/]+', '_')
+            base = base:gsub(' ', '_')
             cb(base)
           end)
         end
@@ -709,23 +711,21 @@ require('lazy').setup({
           return prefix .. ': ' .. vim.fn.fnamemodify(path, ':t')
         end
 
-        local items = {
-          { kind = 'desktop', label = label('Desktop', latest_desktop), path = latest_desktop },
-          { kind = 'downloads', label = label('Downloads', latest_downloads), path = latest_downloads },
-          { kind = 'clipboard', label = 'Clipboard', path = clip_tmp },
-        }
+        -- Order matters
+        local items = {}
+        if clip_tmp then
+          table.insert(items, { kind = 'clipboard', label = 'Clipboard', path = clip_tmp })
+        end
+        table.insert(items, { kind = 'desktop', label = label('Desktop', latest_desktop), path = latest_desktop })
+        table.insert(items, { kind = 'downloads', label = label('Downloads', latest_downloads), path = latest_downloads })
 
-        -- chafa previewer (works for images + your chafa setup)
+        -- chafa previewer
         local chafa_previewer = previewers.new_termopen_previewer {
           get_command = function(entry)
             local p = entry and entry.value and entry.value.path
-            if not p or p == '' then
-              return { 'sh', '-lc', 'printf "%s\n" "no preview"' }
-            end
             return { 'chafa', p }
           end,
         }
-
         pickers
           .new({}, {
             prompt_title = 'Insert image',
@@ -746,7 +746,7 @@ require('lazy').setup({
             layout_strategy = 'vertical',
             layout_config = {
               width = 0.55,
-              height = 0.45,
+              height = 0.65,
               preview_height = 0.65, -- most of the space goes to preview
               mirror = true, -- preview below results
             },
