@@ -798,6 +798,7 @@ require('lazy').setup({
       -- This bind is defined in a separate file ./lua/custom/plugins/telescope_live_multigrep.lua
       require('custom.plugins.telescope_live_multigrep').setup()
       require('custom.plugins.telescope_find_include_dirs').setup()
+      require('custom.plugins.journal').setup()
     end,
   },
 
