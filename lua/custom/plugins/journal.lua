@@ -52,7 +52,8 @@ local function open_or_create_entry(path)
 
   local stat = vim.loop.fs_stat(path)
   if not stat then
-    local ok, err = pcall(vim.fn.writefile, {}, path)
+    local date_header = '# ' .. os.date '%b %d, %Y'
+    local ok, err = pcall(vim.fn.writefile, { date_header }, path)
     if not ok then
       vim.notify('Failed to create ' .. path .. ': ' .. tostring(err), vim.log.levels.ERROR)
       return
