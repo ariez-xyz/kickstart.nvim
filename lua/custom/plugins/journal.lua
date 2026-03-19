@@ -63,6 +63,24 @@ local function open_or_create_entry(path)
   vim.cmd('edit ' .. vim.fn.fnameescape(path))
 end
 
+local function entry_first_heading(path)
+  local ok, lines = pcall(vim.fn.readfile, path)
+  if not ok then
+    return nil
+  end
+
+  for _, line in ipairs(lines) do
+    local heading = line:gsub('\r$', '')
+    if heading ~= '' then
+      heading = heading:gsub('^%s*#%s*', '')
+      heading = heading:gsub('^%s*(.-)%s*$', '%1')
+      return heading ~= '' and heading or nil
+    end
+  end
+
+  return nil
+end
+
 local function make_journal_entries(root)
   local items = {}
   local today = os.date '%Y-%m-%d'
@@ -70,6 +88,7 @@ local function make_journal_entries(root)
 
   for _, day in ipairs(day_dirs(root)) do
     local entry_exists = vim.loop.fs_stat(day.entry) and true or false
+    local title = entry_exists and entry_first_heading(day.entry) or nil
     if day.day == today then
       found_today = true
     end
@@ -77,8 +96,8 @@ local function make_journal_entries(root)
       day = day.day,
       path = day.entry,
       exists = entry_exists,
-      display = string.format('%s%s', day.day, entry_exists and '' or ' (missing entry.md)'),
-      ordinal = day.day .. (entry_exists and ' entry' or ' missing'),
+      display = entry_exists and (title or (day.day .. ' (no heading)')) or string.format('%s (missing entry.md)', day.day),
+      ordinal = string.format('%s %s %s', day.day, title or '', entry_exists and 'entry' or 'missing'),
     })
   end
 
