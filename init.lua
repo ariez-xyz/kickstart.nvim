@@ -36,7 +36,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -109,6 +109,7 @@ vim.opt.shiftwidth = 4
 vim.opt.linebreak = true
 vim.opt.breakindent = true
 vim.opt.scrollback = 20000
+vim.opt.termguicolors = true
 -- This must go before vimwiki loads I believe. It doesn't work at the end
 vim.g.vimwiki_list = { { path = ZK_DIR, syntax = 'markdown', ext = '.md' } }
 vim.g.vimwiki_ext = '.md'
@@ -296,6 +297,7 @@ require('lazy').setup({
   'vimwiki/vimwiki', -- Detect tabstop and shiftwidth automatically
   'junegunn/fzf',
   'junegunn/fzf.vim',
+  { 'akinsho/bufferline.nvim', version = '*', dependencies = 'nvim-tree/nvim-web-devicons' },
   {
     'S1M0N38/love2d.nvim',
     lazy = false, -- Default (event = "VeryLazy") is broken, load order conflict with Mason. lua_ls config is loaded after Mason starts lua_ls so it doesn't apply until :LspRestart
@@ -957,14 +959,14 @@ require('lazy').setup({
       })
 
       -- Change diagnostic symbols in the sign column (gutter)
-      -- if vim.g.have_nerd_font then
-      --   local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
-      --   local diagnostic_signs = {}
-      --   for type, icon in pairs(signs) do
-      --     diagnostic_signs[vim.diagnostic.severity[type]] = icon
-      --   end
-      --   vim.diagnostic.config { signs = { text = diagnostic_signs } }
-      -- end
+      if vim.g.have_nerd_font then
+        local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
+        local diagnostic_signs = {}
+        for type, icon in pairs(signs) do
+          diagnostic_signs[vim.diagnostic.severity[type]] = icon
+        end
+        vim.diagnostic.config { signs = { text = diagnostic_signs } }
+      end
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
@@ -1349,12 +1351,15 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
-
 -- NOTE: ariez's semi-successful attempt to wrangle vimwiki into giving up its Tab
 -- keybind... afaict doesn't work when calling nvim file1.md file2.md
 vim.g.vimwiki_list = { { path = ZK_DIR, syntax = 'markdown', ext = '.md' } }
 vim.cmd 'tab all' -- Must be at the end or syntax highlighting breaks?
 vim.keymap.set('n', '<C-9>', '<Plug>VimwikiPrevLink')
 vim.keymap.set('n', '<Leader>wn', '<Plug>VimwikiNextLink')
-vim.keymap.set('n', '<Tab>', 'gt')
-vim.keymap.set('n', '<S-Tab>', 'gT')
+
+-- NOTE: Bufferline. Better tabs
+require('bufferline').setup {}
+vim.keymap.set('n', '<Tab>', '<Cmd>BufferLineCycleNext<CR>', { desc = 'Next buffer' })
+vim.keymap.set('n', '<S-Tab>', '<Cmd>BufferLineCyclePrev<CR>', { desc = 'Previous buffer' })
+vim.keymap.set('n', '<leader>x', '<Cmd>bdelete<CR>', { desc = 'Close buffer' })
