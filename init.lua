@@ -1362,4 +1362,35 @@ vim.keymap.set('n', '<Leader>wn', '<Plug>VimwikiNextLink')
 require('bufferline').setup {}
 vim.keymap.set('n', '<Tab>', '<Cmd>BufferLineCycleNext<CR>', { desc = 'Next buffer' })
 vim.keymap.set('n', '<S-Tab>', '<Cmd>BufferLineCyclePrev<CR>', { desc = 'Previous buffer' })
-vim.keymap.set('n', '<leader>x', '<Cmd>bdelete<CR>', { desc = 'Close buffer' })
+
+local function close_buffer_keep_split()
+  local current = vim.api.nvim_get_current_buf()
+  local alternate = vim.fn.bufnr '#'
+
+  -- Prefer the alternate buffer, like Ctrl-^
+  if alternate > 0 and vim.api.nvim_buf_is_valid(alternate) and vim.bo[alternate].buflisted and alternate ~= current then
+    vim.api.nvim_set_current_buf(alternate)
+  else
+    -- Otherwise find another listed buffer
+    local listed = vim.fn.getbufinfo { buflisted = 1 }
+    local switched = false
+
+    for _, buf in ipairs(listed) do
+      if buf.bufnr ~= current then
+        vim.api.nvim_set_current_buf(buf.bufnr)
+        switched = true
+        break
+      end
+    end
+
+    -- If there is no other buffer, create an empty one so the split survives
+    if not switched then
+      vim.cmd 'enew'
+    end
+  end
+
+  -- Now delete the old buffer
+  vim.cmd('bdelete ' .. current)
+end
+
+vim.keymap.set('n', '<leader>x', close_buffer_keep_split, { desc = 'Close buffer (preserve split)' })
